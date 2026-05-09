@@ -34,7 +34,6 @@ const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, on
         <span className="font-data-mono text-on-surface">{length}</span>
       </div>
     </div>
-    </div>
     <button onClick={() => onBump({ rank, name, imo, priorityScore })} className={`w-full py-3 rounded text-on-primary font-bold uppercase tracking-wider text-body-sm transition-opacity active:scale-95 ${isEmergency ? 'bg-error hover:bg-error/80' : 'bg-primary hover:opacity-80'}`}>
       {isEmergency ? 'Acknowledge' : 'Manual Bump'}
     </button>
