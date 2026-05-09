@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useDashboardMocks } from './dashboard_mocks';
 import VesselTrafficManifest from './VesselTrafficManifest';
 
-const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, onBump }) => (
-  <div className="glass-card p-6 rounded-lg relative overflow-hidden group">
-    {isPrimary && (
-      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 -rotate-12 translate-x-8 -translate-y-8 pointer-events-none"></div>
+const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, onBump, isEmergency }) => (
+  <div className={`glass-card p-6 rounded-lg relative overflow-hidden group ${isEmergency ? 'border-2 border-error bg-error/10 animate-pulse shadow-[0_0_20px_rgba(255,84,73,0.3)]' : ''}`}>
+    {(isPrimary || isEmergency) && (
+      <div className={`absolute top-0 right-0 w-24 h-24 -rotate-12 translate-x-8 -translate-y-8 pointer-events-none ${isEmergency ? 'bg-error/20' : 'bg-primary/5'}`}></div>
     )}
     <div className="flex justify-between items-start mb-6">
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 flex items-center justify-center bg-surface-container-high rounded-full border border-primary/20 font-bold ${isPrimary ? 'text-primary' : 'text-on-surface-variant'}`}>
+        <div className={`w-10 h-10 flex items-center justify-center rounded-full border font-bold ${isEmergency ? 'bg-error/20 text-error border-error/50' : (isPrimary ? 'bg-surface-container-high text-primary border-primary/20' : 'bg-surface-container-high text-on-surface-variant border-outline')}`}>
           {rank}
         </div>
         <div>
@@ -18,8 +18,10 @@ const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, on
         </div>
       </div>
       <div className="text-right">
-        <span className={`font-label-caps text-label-caps block ${isPrimary ? 'text-primary' : 'text-on-surface-variant'}`}>PRIORITY</span>
-        <span className={`font-data-mono text-2xl font-bold ${isPrimary ? 'text-primary' : 'text-on-surface'}`}>{priorityScore}/100</span>
+        <span className={`font-label-caps text-label-caps block ${isEmergency ? 'text-error animate-pulse' : (isPrimary ? 'text-primary' : 'text-on-surface-variant')}`}>
+          {isEmergency ? 'CRITICAL' : 'PRIORITY'}
+        </span>
+        <span className={`font-data-mono text-2xl font-bold ${isEmergency ? 'text-error' : (isPrimary ? 'text-primary' : 'text-on-surface')}`}>{priorityScore}/100</span>
       </div>
     </div>
     <div className="grid grid-cols-2 gap-4 mb-6">
@@ -32,8 +34,9 @@ const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, on
         <span className="font-data-mono text-on-surface">{length}</span>
       </div>
     </div>
-    <button onClick={() => onBump({ rank, name, imo, priorityScore })} className="w-full bg-primary py-3 rounded text-on-primary font-bold uppercase tracking-wider text-body-sm hover:opacity-80 transition-opacity active:scale-95">
-      Manual Bump
+    </div>
+    <button onClick={() => onBump({ rank, name, imo, priorityScore })} className={`w-full py-3 rounded text-on-primary font-bold uppercase tracking-wider text-body-sm transition-opacity active:scale-95 ${isEmergency ? 'bg-error hover:bg-error/80' : 'bg-primary hover:opacity-80'}`}>
+      {isEmergency ? 'Acknowledge' : 'Manual Bump'}
     </button>
   </div>
 );
@@ -62,6 +65,9 @@ export default function HarborMasterDashboard({
   const [overrideReason, setOverrideReason] = useState('');
   const [selectedRank, setSelectedRank] = useState(1);
   const [realVessels, setRealVessels] = useState([]);
+  const [dispatchName, setDispatchName] = useState('');
+  const [dispatchCargo, setDispatchCargo] = useState('');
+  const [isDispatching, setIsDispatching] = useState(false);
 
   useEffect(() => {
     const fetchVessels = async () => {
@@ -122,6 +128,44 @@ export default function HarborMasterDashboard({
     } catch (error) {
       console.error('Error overriding:', error);
     }
+  };
+
+  const handleManualDispatch = async (isEmergency = false) => {
+    if (!dispatchName.trim() || !dispatchCargo.trim()) return;
+    setIsDispatching(true);
+    try {
+      const response = await fetch('/api/manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vessel_name: dispatchName,
+          catch_type: dispatchCargo,
+          is_emergency: isEmergency
+        })
+      });
+      if (response.ok) {
+        setDispatchName('');
+        setDispatchCargo('');
+      }
+    } catch (error) {
+      console.error("Failed to send manual dispatch", error);
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+  const getEconomicValuePreserved = () => {
+    return realVessels.reduce((acc, boat) => {
+      // P_i Lookup
+      const pi = { 'Tuna': 10, 'Shrimp': 10, 'Prawns': 10, 'Crabs': 4 }[boat.cargo_type] || 0;
+      // T_w Saved (Mocked via priority score if wait time isn't explicitly high yet)
+      const tw_saved = boat.wait_time > 0 ? boat.wait_time : (boat.priority_score > 0 ? boat.priority_score / 2 : 0);
+      // Constant
+      const constant = 4500; 
+      
+      return acc + (tw_saved * pi * constant);
+    }, 0);
   };
 
   return (
@@ -209,12 +253,38 @@ export default function HarborMasterDashboard({
                 </p>
               </div>
               <div className="flex gap-4">
-                <div className="flex flex-col items-end">
+                {/* VALUE PRESERVED CARD */}
+                <div className="glass-card px-4 py-2 rounded-lg border border-primary/40 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                     <span className="material-symbols-outlined text-primary">currency_rupee</span>
+                   </div>
+                   <div className="flex flex-col items-start">
+                     <span className="font-label-caps text-[10px] text-primary whitespace-nowrap">Est. Post-Harvest Loss Prevented</span>
+                     <span className="font-data-mono text-xl font-bold text-primary tracking-wider">
+                        ₹{Math.round(getEconomicValuePreserved()).toLocaleString('en-IN')}
+                     </span>
+                   </div>
+                </div>
+
+                <div className="flex flex-col items-end justify-center ml-4">
                   <span className="font-label-caps text-label-caps text-tertiary">CURRENT HARBOR LOAD</span>
                   <span className={`font-data-mono text-data-mono ${harborLoad > 85 ? 'text-error animate-pulse' : 'text-primary'}`}>{harborLoad}% CAPACITY</span>
                 </div>
               </div>
             </div>
+
+            {/* HARBOR ALERT BANNER */}
+            {realVessels.some(v => v.is_emergency) && (
+              <div className="w-full bg-error/20 border-2 border-error rounded-lg p-4 mb-6 flex items-center justify-between animate-pulse shadow-[0_0_20px_rgba(255,84,73,0.3)]">
+                <div className="flex items-center gap-4">
+                  <span className="material-symbols-outlined text-error text-3xl">warning</span>
+                  <div>
+                    <h2 className="font-display-lg text-error text-xl uppercase tracking-widest">Harbor Alert: Emergency Declaration</h2>
+                    <p className="text-error/80 font-data-mono text-sm">Critical vessel en route. Standard operations suspended. Clear main docks immediately.</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* QUEUE TAB */}
             {activeTab === 'queue' && (
@@ -230,10 +300,11 @@ export default function HarborMasterDashboard({
                    eta={`${(vessel.wait_time || 0).toFixed(1)} hrs`}
                    length={`${vessel.cargo_capacity || 0} TEU`}
                    isPrimary={(vessel.priority_score || 0) > 90}
+                   isEmergency={vessel.is_emergency}
                    onBump={handleBumpClick} 
                 />
               )) : vessels.map((vessel) => (
-                <VesselCard key={vessel.imo} {...vessel} onBump={handleBumpClick} />
+                <VesselCard key={vessel.imo} {...vessel} isEmergency={vessel.is_emergency} onBump={handleBumpClick} />
               ))}
             </div>
 
@@ -381,16 +452,15 @@ export default function HarborMasterDashboard({
           </div>
         </main>
 
-        {/* Right Side Panel (SMS Gateway) */}
+        {/* Right Side Panel (Live Radio Dispatch) */}
         <aside className="bg-surface-container-low/40 backdrop-blur-xl border-l border-outline-variant docked h-full w-80 right-0 flex flex-col p-4 shadow-lg shrink-0">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="font-display-lg text-primary text-xl">SMS Gateway</h2>
-              <p className="font-data-mono text-xs text-on-surface-variant">Live PING Feed</p>
+              <h2 className="font-display-lg text-primary text-xl">Live Radio Dispatch</h2>
+              <p className="font-data-mono text-xs text-on-surface-variant">Manual Entry</p>
             </div>
             <div className="flex gap-2">
-              <button className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">call_received</button>
-              <button className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">call_made</button>
+              <span className="material-symbols-outlined text-primary animate-pulse">radio</span>
             </div>
           </div>
           
@@ -400,15 +470,40 @@ export default function HarborMasterDashboard({
             ))}
           </div>
           
-          <div className="mt-4 pt-4 border-t border-outline-variant">
+          <div className="mt-4 pt-4 border-t border-outline-variant space-y-3">
+            <input 
+              className="w-full bg-surface-dim border-none border-b-2 border-outline focus:border-primary focus:ring-0 text-sm py-2 px-3 font-data-mono" 
+              placeholder="Vessel Name..." 
+              type="text" 
+              value={dispatchName}
+              onChange={(e) => setDispatchName(e.target.value)}
+              disabled={isDispatching}
+            />
             <div className="relative">
               <input 
-                className="w-full bg-surface-dim border-none border-b-2 border-outline focus:border-primary focus:ring-0 text-sm py-2 px-3 font-data-mono" 
-                placeholder="Send manual ping..." 
+                className="w-full bg-surface-dim border-none border-b-2 border-outline focus:border-primary focus:ring-0 text-sm py-2 px-3 font-data-mono pr-10" 
+                placeholder="Cargo / Catch..." 
                 type="text" 
+                value={dispatchCargo}
+                onChange={(e) => setDispatchCargo(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleManualDispatch()}
+                disabled={isDispatching}
               />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary scale-75">send</button>
+              <button 
+                onClick={() => handleManualDispatch(false)}
+                disabled={isDispatching}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary scale-75 transition-all ${isDispatching ? 'opacity-50 cursor-not-allowed animate-spin' : 'hover:scale-90 cursor-pointer'}`}
+              >
+                {isDispatching ? 'sync' : 'send'}
+              </button>
             </div>
+            <button 
+              onClick={() => handleManualDispatch(true)}
+              disabled={isDispatching}
+              className="w-full mt-2 border border-error text-error hover:bg-error/10 py-2 font-bold font-label-caps tracking-widest uppercase transition-colors"
+            >
+              Signal Emergency
+            </button>
           </div>
         </aside>
       </div>

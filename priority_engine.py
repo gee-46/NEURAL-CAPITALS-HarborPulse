@@ -1,59 +1,56 @@
 from dataclasses import dataclass
 from typing import List
 
-# Perishability Index lookup
+# Perishability Index lookup map
 PERISHABILITY_INDEX = {
     "Tuna": 10,
+    "Shrimp": 10,
     "Prawns": 10,
     "Crabs": 4,
     "Default": 0
 }
 
+def calculate_score(wait_time: float, perishability_index: int, distance: float) -> float:
+    """
+    Dynamic Weighted Queueing (DWQ) Core Formula.
+    
+    Calculates the Priority Score (S) based on:
+    - wait_time (T_w): Time already spent waiting (in hours). Positive impact on score (+0.5 weight).
+    - perishability_index (P_i): How quickly the cargo spoils (1-10 scale). High impact (+10 weight).
+    - distance (D): Distance from the harbor (in km). Negative impact (-2 weight) as closer vessels get priority.
+    
+    Formula: S = (T_w * 0.5) + (P_i * 10) - (D * 2)
+    """
+    return (wait_time * 0.5) + (perishability_index * 10) - (distance * 2)
+
 @dataclass
 class Boat:
+    """Data structure representing a vessel in the live harbor queue."""
     name: str
-    wait_time: float      # T_w
-    cargo_type: str       # Determines P_i
-    distance: float       # D
-    cargo_capacity: float # Used for tiebreaker
+    wait_time: float      
+    cargo_type: str       
+    distance: float       
+    cargo_weight: float   
+    is_emergency: bool = False
 
     @property
     def perishability_index(self) -> int:
+        """Looks up the perishability integer based on the cargo string."""
         return PERISHABILITY_INDEX.get(self.cargo_type, PERISHABILITY_INDEX["Default"])
 
     @property
     def priority_score(self) -> float:
-        """
-        Calculates Priority Score S:
-        S = (T_w * 0.5) + (P_i * 10) - (D * 2)
-        """
-        t_w = self.wait_time
-        p_i = self.perishability_index
-        d = self.distance
-        
-        return (t_w * 0.5) + (p_i * 10) - (d * 2)
+        """Invokes the core DWQ algorithm for this specific vessel. Overrides to 999.0 if emergency."""
+        if self.is_emergency:
+            return 999.0
+        return calculate_score(self.wait_time, self.perishability_index, self.distance)
 
 def sort_boats_by_priority(boats: List[Boat]) -> List[Boat]:
     """
-    Sorts a list of boats based on their priority score (highest first).
-    Tiebreaker: If scores are equal, the boat with the smaller cargo capacity wins.
-    """
-    # Sort key:
-    # 1. -b.priority_score (Descending order for score)
-    # 2. b.cargo_capacity  (Ascending order for tiebreaker: smaller capacity clears dock faster)
-    return sorted(boats, key=lambda b: (-b.priority_score, b.cargo_capacity))
-
-# Example usage
-if __name__ == "__main__":
-    test_boats = [
-        Boat(name="MV Rajan", wait_time=12.0, cargo_type="Tuna", distance=5.0, cargo_capacity=500.0),
-        # 'The Sea Wolf' has the exact same score variables as 'MV Rajan' but smaller capacity
-        Boat(name="The Sea Wolf", wait_time=12.0, cargo_type="Tuna", distance=5.0, cargo_capacity=200.0),
-        Boat(name="Blue Horizon", wait_time=48.0, cargo_type="Crabs", distance=12.0, cargo_capacity=800.0),
-    ]
-
-    print("--- Live Priority Queue Calculation ---")
-    sorted_queue = sort_boats_by_priority(test_boats)
+    Sorts a list of boats based on their Dynamic Weighted Queueing priority score.
     
-    for rank, boat in enumerate(sorted_queue, 1):
-        print(f"{rank}. {boat.name:<15} | Score: {boat.priority_score:>5.1f} | Capacity: {boat.cargo_capacity:>5.1f} | Cargo: {boat.cargo_type}")
+    Primary Sort: Highest Priority Score (S) first.
+    Secondary Tie-breaker: If scores are identical, the vessel with the smaller cargo_weight 
+                           is prioritized, as lighter vessels clear the unloading docks faster.
+    """
+    return sorted(boats, key=lambda b: (-b.priority_score, b.cargo_weight))
