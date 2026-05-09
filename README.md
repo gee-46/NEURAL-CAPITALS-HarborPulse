@@ -78,7 +78,14 @@ The platform improves turnaround efficiency and helps authorities make faster, d
 * Centralized harbor coordination
 
 ---
+# 🧠 The "Pulse Score" Algorithm
+Unlike static queues, HarborPulse uses a dynamic weighting formula:
+**Score = (Wait Time × 0.5) + (Perishability × 10) - (Distance × 2)**
 
+*   **Dynamic Perishability:** Prioritizes high-value cargo (Tuna/Prawns) to prevent economic loss.
+*   **Distance Awareness:** Penalizes distant boats to ensure docks are never sitting empty.
+*   **Capacity Tiebreaker:** Prioritizes smaller vessels to maximize harbor throughput.
+---
 # 📊 Analytics & Monitoring
 
 * Harbor utilization metrics
