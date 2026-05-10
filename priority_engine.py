@@ -32,6 +32,7 @@ class Boat:
     distance: float       
     cargo_weight: float   
     is_emergency: bool = False
+    manual_override: bool = False
 
     @property
     def perishability_index(self) -> int:
@@ -40,9 +41,11 @@ class Boat:
 
     @property
     def priority_score(self) -> float:
-        """Invokes the core DWQ algorithm for this specific vessel. Overrides to 999.0 if emergency."""
+        """Invokes the core DWQ algorithm for this specific vessel. Overrides to 999.0 if emergency, 100.0 if manual bump."""
         if self.is_emergency:
             return 999.0
+        if self.manual_override:
+            return 100.0
         return calculate_score(self.wait_time, self.perishability_index, self.distance)
 
 def sort_boats_by_priority(boats: List[Boat]) -> List[Boat]:

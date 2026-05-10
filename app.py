@@ -6,18 +6,23 @@ from firebase_admin import credentials, firestore
 from flask import Flask, request, jsonify
 from priority_engine import Boat, sort_boats_by_priority
 
-# Ensure clean Firebase initialization using environment variables
+# Ensure clean Firebase initialization
 try:
     firebase_admin.get_app()
     db = firestore.client()
 except ValueError:
-    cred_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-    if cred_path:
-        cred = credentials.Certificate(cred_path)
+    # Use local serviceAccountKey.json if it exists
+    if os.path.exists('serviceAccountKey.json'):
+        cred = credentials.Certificate('serviceAccountKey.json')
         firebase_admin.initialize_app(cred)
     else:
-        # Fallback to default behavior if env var isn't set
-        firebase_admin.initialize_app()
+        # Fallback to environment variable or default
+        cred_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if cred_path:
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+        else:
+            firebase_admin.initialize_app()
     db = firestore.client()
 
 app = Flask(__name__)
@@ -41,7 +46,8 @@ def update_queue():
                 cargo_type=data.get('cargo_type', 'Default'),
                 distance=float(data.get('distance', 0.0)),
                 cargo_weight=float(data.get('cargo_capacity', 0.0)),
-                is_emergency=bool(data.get('is_emergency', False))
+                is_emergency=bool(data.get('is_emergency', False)),
+                manual_override=bool(data.get('manual_override', False))
             )
             boats.append(boat)
             doc_map[id(boat)] = doc.reference
@@ -200,5 +206,23 @@ def manual_override():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+import threading
+import time
+
+def pulse_loop():
+    """Background thread to keep the harbor 'alive' by updating the queue every 5s."""
+    print("CORE PULSE ENGINE STARTED")
+    while True:
+        try:
+            with app.app_context():
+                update_queue()
+        except Exception as e:
+            print(f"Pulse error: {e}")
+        time.sleep(5)
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Start the Pulse Engine in the background
+    pulse_thread = threading.Thread(target=pulse_loop, daemon=True)
+    pulse_thread.start()
+    
+    app.run(debug=True, port=5000, use_reloader=False)

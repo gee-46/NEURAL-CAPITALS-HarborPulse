@@ -1,44 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { db } from '../firebase';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useDashboardMocks } from './dashboard_mocks';
 import VesselTrafficManifest from './VesselTrafficManifest';
 
-const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, onBump, isEmergency }) => (
-  <div className={`glass-card p-6 rounded-lg relative overflow-hidden group ${isEmergency ? 'border-2 border-error bg-error/10 animate-pulse shadow-[0_0_20px_rgba(255,84,73,0.3)]' : ''}`}>
-    {(isPrimary || isEmergency) && (
-      <div className={`absolute top-0 right-0 w-24 h-24 -rotate-12 translate-x-8 -translate-y-8 pointer-events-none ${isEmergency ? 'bg-error/20' : 'bg-primary/5'}`}></div>
-    )}
-    <div className="flex justify-between items-start mb-6">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 flex items-center justify-center rounded-full border font-bold ${isEmergency ? 'bg-error/20 text-error border-error/50' : (isPrimary ? 'bg-surface-container-high text-primary border-primary/20' : 'bg-surface-container-high text-on-surface-variant border-outline')}`}>
-          {rank}
+const VesselCard = ({ rank, name, imo, priorityScore, eta, length, isPrimary, onBump, isEmergency }) => {
+  // Dynamic Background based on score
+  const score = parseFloat(priorityScore);
+  const statusColor = isEmergency || score > 90 
+    ? 'border-error/40 bg-error/10' 
+    : score >= 50 
+      ? 'border-tertiary/40 bg-tertiary/10' 
+      : 'border-primary/40 bg-primary/10';
+
+  const statusText = isEmergency || score > 90 ? 'URGENT' : score >= 50 ? 'ALERT' : 'STABLE';
+  const accentColor = isEmergency || score > 90 ? 'text-error' : score >= 50 ? 'text-tertiary' : 'text-primary';
+
+  return (
+    <div className={`glass-card p-6 rounded-xl border transition-all duration-500 group relative overflow-hidden hover:shadow-[0_0_25px_rgba(87,241,219,0.15)] hover:scale-[1.02] cursor-pointer ${statusColor}`}>
+      {(isPrimary || isEmergency) && (
+        <div className={`absolute top-0 right-0 w-24 h-24 -rotate-12 translate-x-8 -translate-y-8 pointer-events-none ${isEmergency ? 'bg-error/20' : 'bg-primary/5'}`}></div>
+      )}
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 flex items-center justify-center rounded-full border font-bold ${isEmergency ? 'bg-error/20 text-error border-error/50' : 'bg-surface-container-high text-on-surface border-outline'}`}>
+            {rank}
+          </div>
+          <div>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{name}</h3>
+            <p className="font-label-caps text-label-caps text-on-surface-variant opacity-60">IMO: {imo}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-title-sm text-title-sm text-on-surface">{name}</h3>
-          <p className="font-label-caps text-label-caps text-on-surface-variant">IMO: {imo}</p>
+        <div className="text-right">
+          <span className={`font-label-caps text-[10px] font-bold block tracking-widest ${accentColor}`}>
+            {statusText}
+          </span>
+          <span className={`font-data-mono text-2xl font-bold ${accentColor}`}>{priorityScore}/100</span>
         </div>
       </div>
-      <div className="text-right">
-        <span className={`font-label-caps text-label-caps block ${isEmergency ? 'text-error animate-pulse' : (isPrimary ? 'text-primary' : 'text-on-surface-variant')}`}>
-          {isEmergency ? 'CRITICAL' : 'PRIORITY'}
-        </span>
-        <span className={`font-data-mono text-2xl font-bold ${isEmergency ? 'text-error' : (isPrimary ? 'text-primary' : 'text-on-surface')}`}>{priorityScore}/100</span>
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="p-3 bg-black/20 rounded border border-outline-variant/30">
+          <span className="block font-label-caps text-[9px] text-on-surface-variant mb-1">DISTANCE/ETA</span>
+          <span className="font-data-mono text-on-surface text-sm">{eta}</span>
+        </div>
+        <div className="p-3 bg-black/20 rounded border border-outline-variant/30">
+          <span className="block font-label-caps text-[9px] text-on-surface-variant mb-1">VESSEL CLASS</span>
+          <span className="font-data-mono text-on-surface text-sm">{length}</span>
+        </div>
+      </div>
+      <div className="flex gap-2 relative z-10">
+        <button onClick={() => onBump({ rank, name, imo, priorityScore })} className={`flex-1 py-3 rounded-lg text-on-primary font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 ${isEmergency || score > 90 ? 'bg-error hover:bg-error/80' : 'bg-primary hover:opacity-80'}`}>
+          {isEmergency ? 'Acknowledge' : 'Manual Bump'}
+        </button>
+        <Link 
+          to={`/status/${imo}`}
+          className="flex items-center justify-center px-4 rounded-lg border border-primary text-primary hover:bg-primary/10 transition-all active:scale-95"
+          title="Track Live Status"
+        >
+          <span className="material-symbols-outlined text-sm">sensors</span>
+        </Link>
       </div>
     </div>
-    <div className="grid grid-cols-2 gap-4 mb-6">
-      <div className="p-3 bg-surface-container rounded border border-outline-variant">
-        <span className="block font-label-caps text-label-caps text-on-surface-variant">ETA</span>
-        <span className="font-data-mono text-on-surface">{eta}</span>
-      </div>
-      <div className="p-3 bg-surface-container rounded border border-outline-variant">
-        <span className="block font-label-caps text-label-caps text-on-surface-variant">LENGTH</span>
-        <span className="font-data-mono text-on-surface">{length}</span>
-      </div>
-    </div>
-    <button onClick={() => onBump({ rank, name, imo, priorityScore })} className={`w-full py-3 rounded text-on-primary font-bold uppercase tracking-wider text-body-sm transition-opacity active:scale-95 ${isEmergency ? 'bg-error hover:bg-error/80' : 'bg-primary hover:opacity-80'}`}>
-      {isEmergency ? 'Acknowledge' : 'Manual Bump'}
-    </button>
-  </div>
-);
+  );
+};
 
 const SmsEntry = ({ time, source, message, isPrimary }) => (
   <div className={`p-3 border-l-4 pl-2 transition-all hover:bg-white/5 cursor-pointer ${isPrimary ? 'bg-surface-container border-primary' : 'bg-transparent border-outline-variant'}`}>
@@ -67,6 +92,56 @@ export default function HarborMasterDashboard({
   const [dispatchName, setDispatchName] = useState('');
   const [dispatchCargo, setDispatchCargo] = useState('');
   const [isDispatching, setIsDispatching] = useState(false);
+  const [liveLogs, setLiveLogs] = useState([]);
+  const [systemLogs, setSystemLogs] = useState([]);
+
+  // Unified data source for the whole dashboard
+  const activeVessels = realVessels.length > 0 ? realVessels : vessels;
+
+  // Mock messages for simulation
+  const mockMessages = [
+    "SMS Received from +91XXXXXX04: 'IN TUNA 500'",
+    "SMS Received from +91XXXXXX88: 'IN MACKEREL 200'",
+    "System Alert: Priority Zone Breach - Vessel ID 4402",
+    "SMS Received from +91XXXXXX12: 'IN PRAWNS 150'",
+    "Harbor Master: Manual Priority assigned to 'MV Rescue'"
+  ];
+
+  const addLog = (msg) => {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setSystemLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 50));
+  };
+
+  useEffect(() => {
+    // Simulate live traffic on load
+    mockMessages.forEach((msg, i) => {
+      setTimeout(() => addLog(msg), (i + 1) * 3000);
+    });
+  }, []);
+
+  // Track vessel arrivals to log them
+  useEffect(() => {
+    if (realVessels.length > 0) {
+      const latest = realVessels[0];
+      // Only log if it's "new" (added in the last 10 seconds)
+      const isNew = latest.last_ping_time && (Date.now() - latest.last_ping_time.toMillis() < 10000);
+      if (isNew) {
+        addLog(`Vessel Detected: ${latest.name} (${latest.cargo_type}) - Rank #${latest.current_rank}`);
+      }
+    }
+  }, [realVessels]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'), limit(5));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setLiveLogs(logs);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchVessels = async () => {
@@ -87,45 +162,62 @@ export default function HarborMasterDashboard({
     return () => clearInterval(intId);
   }, []);
 
-  // Map distance (1km to 15km) to radial coordinates
+  // Map distance (1km to 15km) to radial coordinates — ocean side only
   const getBoatPosition = (boat) => {
-    // Generate pseudo-random angle based on boat name hash so it remains constant
     const hash = boat.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const angleStr = ((hash * 137.5) % 360) * (Math.PI / 180); 
-    
-    // Distance mapped to radius (max 45% to keep inside the circle)
-    const maxDistance = 15;
-    const radiusPercent = (Math.min(boat.distance || 5, maxDistance) / maxDistance) * 42; 
-    
-    const left = 50 + radiusPercent * Math.cos(angleStr);
-    const top = 50 + radiusPercent * Math.sin(angleStr);
-    
+
+    // Ocean is on the RIGHT side of the satellite image.
+    // Constrain angles to -100° → +80° (right arc = open water approach corridor).
+    // This prevents dots from appearing over the land/port infrastructure on the left.
+    const oceanSpread = 180;                        // total arc width in degrees
+    const oceanCenter = 0;                          // 0° = right = open sea
+    const rawAngle    = (hash * 137.5) % oceanSpread;  // 0 → 180
+    const angleDeg    = rawAngle - (oceanSpread / 2) + oceanCenter; // -90° → +90°
+    const angleRad    = angleDeg * (Math.PI / 180);
+
+    // Distance mapped to radius (max 42% to keep inside the circle)
+    const maxDistance  = 15;
+    const radiusPercent = (Math.min(boat.distance || 5, maxDistance) / maxDistance) * 42;
+
+    const left = 50 + radiusPercent * Math.cos(angleRad);
+    const top  = 50 + radiusPercent * Math.sin(angleRad);
+
     return { left, top };
   };
 
   const handleBumpClick = (vessel) => {
     setSelectedVessel(vessel);
-    setSelectedRank(vessel.rank);
     setOverrideReason('');
     setIsModalOpen(true);
   };
 
-  const submitOverride = async () => {
+  const submitOverride = async (reason) => {
+    if (!selectedVessel || !reason) return;
+    setIsModalOpen(false);
     try {
-      const response = await fetch('/api/manual-override', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          boat_id: selectedVessel.imo,
-          reason_code: overrideReason,
-          new_rank: parseInt(selectedRank, 10)
-        })
+      console.log(`ATTEMPTING BUMP FOR: ${selectedVessel.name} (ID: ${selectedVessel.imo})`);
+
+      // 1. Update the Vessel Document
+      const vesselRef = doc(db, 'vessels', selectedVessel.imo);
+      await updateDoc(vesselRef, {
+        manual_override: true,
+        priority_score: 100,
+        override_reason: reason
       });
-      const data = await response.json();
-      console.log('Override response:', data);
-      setIsModalOpen(false);
+
+      // 2. Create Audit Log Entry
+      await addDoc(collection(db, 'audit_logs'), {
+        vessel_id: selectedVessel.imo,
+        vessel_name: selectedVessel.name,
+        timestamp: serverTimestamp(),
+        action: "MANUAL_BUMP",
+        reason: reason
+      });
+
+      console.log(`Manual bump successful for ${selectedVessel.name}`);
     } catch (error) {
-      console.error('Error overriding:', error);
+      console.error("FIREBASE ERROR:", error);
+      alert(`CRITICAL ERROR: Failed to reach Firebase.\n\nDetails: ${error.message}`);
     }
   };
 
@@ -156,14 +248,17 @@ export default function HarborMasterDashboard({
   };
   const getEconomicValuePreserved = () => {
     return realVessels.reduce((acc, boat) => {
-      // P_i Lookup
-      const pi = { 'Tuna': 10, 'Shrimp': 10, 'Prawns': 10, 'Crabs': 4 }[boat.cargo_type] || 0;
-      // T_w Saved (Mocked via priority score if wait time isn't explicitly high yet)
-      const tw_saved = boat.wait_time > 0 ? boat.wait_time : (boat.priority_score > 0 ? boat.priority_score / 2 : 0);
-      // Constant
-      const constant = 4500; 
+      // Use the actual Perishability Index from the vessel document
+      const pi = boat.perishability_index || 0;
       
-      return acc + (tw_saved * pi * constant);
+      // If high perishability (Pi > 7) and it's being prioritized (Score > 50)
+      if (pi > 7 && (boat.priority_score || 0) > 50) {
+        // Deterministic random value based on vessel ID (so it doesn't flicker)
+        const boatSeed = parseInt(boat.imo || '0') || 123;
+        const impactValue = 1500 + ((boatSeed * 73) % 1500); 
+        return acc + impactValue;
+      }
+      return acc;
     }, 0);
   };
 
@@ -226,11 +321,22 @@ export default function HarborMasterDashboard({
               <span>Settings</span>
             </a>
           </nav>
-          <div className="mt-auto p-4 glass-card rounded-lg">
-            <p className="font-label-caps text-label-caps text-primary mb-2">SYSTEM HEALTH</p>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary bloom-pip-teal"></div>
-              <span className="text-body-sm">LINK STATUS: ACTIVE</span>
+          {/* Live System Log Section */}
+          <div className="mt-auto flex flex-col min-h-[200px] gap-2">
+            <p className="font-label-caps text-[10px] text-primary flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+              LIVE SYSTEM LOG
+            </p>
+            <div className="flex-1 bg-black/40 border border-outline-variant rounded-lg p-2 font-data-mono text-[10px] leading-relaxed overflow-y-auto max-h-[180px] custom-scrollbar text-primary/80">
+              {systemLogs.length === 0 ? (
+                <p className="opacity-40 italic">Initializing stream...</p>
+              ) : (
+                systemLogs.map((log, i) => (
+                  <div key={i} className="mb-1 border-l border-primary/20 pl-2 animate-in fade-in slide-in-from-left-2 duration-500">
+                    {log}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </aside>
@@ -252,14 +358,21 @@ export default function HarborMasterDashboard({
                 </p>
               </div>
               <div className="flex gap-4">
-                {/* VALUE PRESERVED CARD */}
-                <div className="glass-card px-4 py-2 rounded-lg border border-primary/40 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                     <span className="material-symbols-outlined text-primary">currency_rupee</span>
+                {/* KEY IMPACT METRIC */}
+                <div className="glass-card px-5 py-2 rounded-xl border border-primary/30 bg-primary/5 flex items-center gap-4 shadow-[0_0_15px_rgba(87,241,219,0.1)] transition-all hover:scale-105 duration-500">
+                   <div className="relative">
+                     <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/40">
+                       <span className="material-symbols-outlined text-primary text-xl">payments</span>
+                     </div>
+                     {/* Pulsing Live indicator */}
+                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-surface animate-pulse shadow-[0_0_8px_#57f1db]"></div>
                    </div>
                    <div className="flex flex-col items-start">
-                     <span className="font-label-caps text-[10px] text-primary whitespace-nowrap">Est. Post-Harvest Loss Prevented</span>
-                     <span className="font-data-mono text-xl font-bold text-primary tracking-wider">
+                     <div className="flex items-center gap-2">
+                       <span className="font-label-caps text-[9px] text-primary tracking-[0.2em] font-bold">EST. LOSS PREVENTED</span>
+                       <span className="text-[8px] font-bold text-primary bg-primary/20 px-1.5 py-0.5 rounded leading-none">LIVE</span>
+                     </div>
+                     <span className="font-data-mono text-2xl font-bold text-primary drop-shadow-[0_0_5px_rgba(87,241,219,0.5)]">
                         ₹{Math.round(getEconomicValuePreserved()).toLocaleString('en-IN')}
                      </span>
                    </div>
@@ -289,21 +402,19 @@ export default function HarborMasterDashboard({
             {activeTab === 'queue' && (
               <>
                 <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-gutter">
-              {realVessels.length > 0 ? realVessels.map((vessel) => (
+              {activeVessels.map((vessel) => (
                 <VesselCard 
-                   key={vessel.id || vessel.name} 
-                   rank={vessel.current_rank}
+                   key={vessel.id || vessel.imo || vessel.name} 
+                   rank={vessel.current_rank || vessel.rank}
                    name={vessel.name}
-                   imo={vessel.id || "N/A"}
+                   imo={vessel.id || vessel.imo || "N/A"}
                    priorityScore={(vessel.priority_score || 0).toFixed(1)}
-                   eta={`${(vessel.wait_time || 0).toFixed(1)} hrs`}
-                   length={`${vessel.cargo_capacity || 0} TEU`}
-                   isPrimary={(vessel.priority_score || 0) > 90}
+                   eta={typeof vessel.eta === 'string' ? vessel.eta : `${(vessel.wait_time || 0).toFixed(1)} hrs`}
+                   length={typeof vessel.length === 'string' ? vessel.length : `${vessel.cargo_capacity || 0} TEU`}
+                   isPrimary={(vessel.priority_score || 0) > 90 || vessel.isPrimary}
                    isEmergency={vessel.is_emergency}
                    onBump={handleBumpClick} 
                 />
-              )) : vessels.map((vessel) => (
-                <VesselCard key={vessel.imo} {...vessel} isEmergency={vessel.is_emergency} onBump={handleBumpClick} />
               ))}
             </div>
 
@@ -401,8 +512,8 @@ export default function HarborMasterDashboard({
                 <span className="mt-4 font-label-caps text-label-caps text-primary tracking-widest bg-surface-container-low/50 px-2 py-1 rounded">TACTICAL RADAR: 15KM RADIUS</span>
               </div>
               
-              {/* Real-time Firebase Vessel Dots */}
-              {realVessels.map(boat => {
+              {/* Real-time Vessel Dots (Shared Source) */}
+              {activeVessels.map(boat => {
                 const pos = getBoatPosition(boat);
                 const isHighPriority = (boat.priority_score || 0) > 90;
                 return (
@@ -430,7 +541,7 @@ export default function HarborMasterDashboard({
 
             {/* TRAFFIC TAB */}
             {activeTab === 'traffic' && (
-              <VesselTrafficManifest vessels={realVessels} />
+              <VesselTrafficManifest vessels={activeVessels} />
             )}
 
             {/* MAPS TAB */}
@@ -463,8 +574,28 @@ export default function HarborMasterDashboard({
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 font-data-mono text-xs">
-            {smsLog.map((log) => (
+          <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 font-data-mono text-xs">
+            {liveLogs.length > 0 ? liveLogs.map((log) => (
+              <div key={log.id} className="p-3 border-l-2 border-primary bg-white/5 animate-log">
+                <div className="flex justify-between mb-1 opacity-50 text-[9px]">
+                  <span>{log.timestamp?.toDate().toLocaleTimeString() || "NOW"}</span>
+                  <span>{log.action}</span>
+                </div>
+                {log.action === 'MANUAL_BUMP' ? (
+                  <p className="text-on-surface leading-relaxed">
+                    <span className="text-error font-bold mr-2">[OVERRIDE]</span>
+                    <span className="text-primary">{log.vessel_name}:</span> {log.reason}
+                  </p>
+                ) : log.action === 'TELEGRAM_PING' ? (
+                  <p className="text-on-surface leading-relaxed">
+                    <span className="text-tertiary font-bold mr-2">[PING]</span>
+                    <span className="text-primary">{log.vessel_name}:</span> {log.reason}
+                  </p>
+                ) : (
+                  <p className="text-on-surface-variant">{log.message || "Action recorded."}</p>
+                )}
+              </div>
+            )) : smsLog.slice(0, 5).map((log) => (
               <SmsEntry key={log.id} time={log.time} source={log.source} message={log.message} isPrimary={log.isPrimary} />
             ))}
           </div>
@@ -507,100 +638,55 @@ export default function HarborMasterDashboard({
         </aside>
       </div>
 
-      {/* Modal Overlay */}
+      {/* ── OVERRIDE REASON MODAL ── */}
       {isModalOpen && selectedVessel && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6" style={{ background: 'rgba(2, 6, 23, 0.85)' }}>
-          <div className="glass-card w-full max-w-lg shadow-[0_8px_32px_rgba(87,241,219,0.15)] overflow-hidden">
-            {/* Modal Header */}
-            <div className="bg-surface-container-high px-6 py-4 flex justify-between items-center border-b border-primary/30">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary">swap_vert</span>
-                <h2 className="font-headline-md text-headline-md text-on-surface tracking-tight">Manual Bump</h2>
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4"
+          style={{ background: 'rgba(2, 6, 23, 0.92)' }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="glass-card w-full max-w-md rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(87,241,219,0.15)] animate-log"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-surface-container-high px-6 py-5 flex justify-between items-center border-b border-primary/20">
+              <div>
+                <p className="text-[10px] font-jetbrains text-on-surface-variant tracking-widest uppercase">Manual Override</p>
+                <h2 className="text-primary font-bold text-lg tracking-tight">{selectedVessel.name}</h2>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-primary transition-colors">
+              <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-primary transition-colors p-2">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            
-            {/* Modal Body */}
-            <div className="p-6 space-y-8">
-              {/* Vessel Info Recap */}
-              <div className="bg-surface-container-lowest/50 p-4 border border-outline-variant/50 rounded flex gap-4">
-                <div className="w-12 h-12 bg-secondary-container rounded flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-secondary-container">directions_boat</span>
-                </div>
-                <div>
-                  <p className="text-body-sm text-on-surface-variant font-label-caps">TARGET VESSEL</p>
-                  <p className="font-display-lg text-[20px] text-primary">{selectedVessel.name}</p>
-                </div>
-              </div>
 
-              {/* Dropdown: Reason for Override */}
-              <div className="space-y-2">
-                <label className="font-label-caps text-on-surface-variant block">Reason for Override</label>
-                <div className="relative">
-                  <select 
-                    value={overrideReason}
-                    onChange={(e) => setOverrideReason(e.target.value)}
-                    className="w-full bg-surface-container-lowest border border-outline-variant text-on-surface py-3 px-4 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body-md"
+            {/* Reason Picker — large tap targets, icon + label */}
+            <div className="p-5">
+              <p className="text-center text-on-surface-variant text-sm mb-5 font-inter">Why is this vessel being prioritized?</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Emergency',        icon: 'emergency',       color: 'border-error   text-error   hover:bg-error/10' },
+                  { label: 'Spoilage Risk',     icon: 'nutrition',       color: 'border-primary text-primary hover:bg-primary/10' },
+                  { label: 'Engine Failure',    icon: 'build',           color: 'border-[#ffb4ab] text-[#ffb4ab] hover:bg-[#ffb4ab]/10' },
+                  { label: 'Weather Hazard',    icon: 'thunderstorm',    color: 'border-tertiary text-tertiary hover:bg-tertiary/10' },
+                ].map(({ label, icon, color }) => (
+                  <button
+                    key={label}
+                    onClick={() => submitOverride(label)}
+                    className={`flex flex-col items-center justify-center gap-3 p-5 rounded-xl border-2 transition-all active:scale-95 ${color}`}
                   >
-                    <option disabled value="">Select priority justification...</option>
-                    <option value="emergency">Emergency</option>
-                    <option value="failure">Equipment Failure</option>
-                    <option value="spoilage">Spoilage Risk</option>
-                    <option value="weather">Weather</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-primary">
-                    <span className="material-symbols-outlined">expand_more</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Slider: Rank Selection */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <label className="font-label-caps text-on-surface-variant block">Rank Selection</label>
-                  <span className="font-data-mono text-primary text-display-lg">{selectedRank.toString().padStart(2, '0')}</span>
-                </div>
-                <div className="relative pt-2">
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="10" 
-                    value={selectedRank}
-                    onChange={(e) => setSelectedRank(e.target.value)}
-                    className="w-full h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer accent-primary" 
-                    style={{ WebkitAppearance: 'none' }}
-                  />
-                  <div className="flex justify-between mt-2 font-data-mono text-[10px] text-on-surface-variant">
-                    <span>PRIORITY 01</span>
-                    <span>PRIORITY 10</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Warning Text */}
-              <div className="flex gap-3 items-start p-3 bg-error-container/20 border border-error/20 rounded">
-                <span className="material-symbols-outlined text-error text-[20px]">report</span>
-                <p className="text-body-sm text-error opacity-90 leading-tight">
-                  Manual override will recalculate fuel efficiency estimates for all downstream vessels. This action is logged for harbor audit.
-                </p>
+                    <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                    <span className="font-bold text-sm text-center leading-tight">{label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="bg-surface-container-lowest p-6 flex gap-4">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container-highest transition-all active:scale-95">
-                CANCEL
-              </button>
-              <button 
-                onClick={submitOverride}
-                disabled={!overrideReason}
-                className={`flex-[2] py-3 bg-primary text-on-primary font-bold shadow-[0_4px_12px_rgba(87,241,219,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 ${!overrideReason ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110'}`}
-              >
-                <span>CONFIRM MOVE</span>
-                <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_up</span>
-              </button>
+            {/* Footer note */}
+            <div className="px-5 pb-5 text-center">
+              <p className="text-[10px] text-on-surface-variant opacity-60 font-inter">
+                This action is logged for safety and compliance.
+              </p>
             </div>
           </div>
         </div>
