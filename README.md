@@ -309,7 +309,8 @@ Unlike traditional harbor systems that rely on static scheduling, HarborPulse dy
 Built with innovation, rapid execution, and scalable infrastructure thinking by:
 
 - Gautam N Chipkar
-- [Add Team Members]
+- Fardeen Y Dharwadkar
+  
 
 ---
 
