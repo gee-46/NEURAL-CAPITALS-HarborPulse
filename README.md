@@ -1,64 +1,191 @@
 # HarborPulse 🚢⚡
-
 ## AI-Powered Smart Harbor Coordination & Dock Intelligence Platform
 
-### Built for **TechVerse’26** by **Team Neural Capitals**
-🏆 Developed during a **24-Hour National Level Hackathon**
+### 🏆 Built for BIT Techverse’26 Hackathon
+### 👨‍💻 Team: Neural Capitals
 
 ---
 
-# 🌍 Theme
-## **Smart Infrastructure & Sustainable Coastal Logistics**
-HarborPulse addresses critical challenges in maritime infrastructure by leveraging intelligent scheduling, real-time monitoring, and AI-assisted coordination to modernize harbor operations and reduce economic losses caused by congestion and delays.
+# 🏆 Achievements
+
+- 🥇 Secured **Top 8 Position** in **BIT Techverse’26 Hackathon**
+- 🚀 Selected among **140+ competing teams** from Round 1
+- ⚡ Successfully designed and built a working MVP within **24 hours**
+- 🧠 Recognized for:
+  - Real-world problem analysis
+  - Smart infrastructure innovation
+  - AI-assisted coordination system
+  - Feasible and scalable solution design
+- 🌊 Developed an intelligent maritime logistics platform focused on:
+  - Harbor congestion reduction
+  - Dynamic dock scheduling
+  - Real-time operational coordination
+- 💡 Appreciated for combining:
+  - Practicality
+  - Innovation
+  - Simplicity
+  - User accessibility for low-tech operators
 
 ---
 
-# 📌 Overview
-HarborPulse is an AI-driven harbor management platform designed to optimize dock scheduling, vessel coordination, unloading operations, and real-time harbor traffic management during peak landing hours.
+# 🌊 Overview
 
-The system transforms traditional harbor operations into a digitally coordinated ecosystem capable of handling high-volume maritime activity efficiently and sustainably.
+HarborPulse is an intelligent harbor coordination and dock scheduling platform designed to reduce congestion, optimize unloading operations, and improve coordination during peak fishing and cargo landing hours.
+
+The platform addresses real-world maritime operational failures caused by static scheduling systems, poor coordination, unpredictable vessel arrivals, and lack of real-time adaptability.
+
+Built during a 24-hour hackathon, HarborPulse introduces a dynamic AI-assisted coordination system capable of adapting to changing harbor conditions in real time.
 
 ---
 
 # 🚨 Problem Statement
-During peak fishing and cargo landing periods, harbors face:
-* **Severe Dock Congestion:** Ships idling for hours wasting fuel.
-* **Economic Losses:** Perishable cargo (Tuna, Prawns) spoiling in the sun due to "First-Come, First-Served" logic.
-* **Manual Bottlenecks:** Harbor Masters relying on radio static and paper manifests.
-* **Blind Operations:** Lack of real-time distance and priority visibility.
+
+Traditional dock scheduling systems failed because they relied on rigid scheduling and lacked real-time adaptability.
+
+### Key Challenges
+- Severe harbor congestion during peak landing hours
+- Long waiting periods before unloading
+- Spoilage of perishable catch
+- Poor coordination between harbor staff and vessels
+- Informal/manual practices overriding digital systems
+- Unpredictable weather and arrival timings
+- Low adoption among small-scale operators
 
 ---
 
-# 💡 Our Solution: The "Pulse Score"
-HarborPulse introduces a centralized smart coordination platform powered by a dynamic **Priority Engine**. Unlike static systems, we calculate a real-time **Pulse Score** for every vessel:
+# ❌ Why Existing Systems Failed
 
-> **Score = (Wait Time × 0.5) + (Perishability × 10) - (Distance × 2)**
+## Static Scheduling
+Arrival timings were highly unpredictable due to:
+- Weather conditions
+- Catch volume fluctuations
+- Sea conditions
 
-*   **Dynamic Perishability:** Ensures high-value cargo reaches the dock while still fresh.
-*   **Distance-Awareness:** Penalizes distant boats to keep docks constantly occupied and efficient.
-*   **Tactical Radar:** A 15km real-time HUD with a dedicated **5km Priority Zone** for automated allocation.
+The system could not dynamically adapt.
+
+---
+
+## Lack of Coordination
+No effective real-time communication existed between:
+- Harbor staff
+- Vessel operators
+- Dock management
+
+This caused scheduling conflicts and confusion.
+
+---
+
+## Poor Workflow Integration
+The system ignored real harbor operational practices and workflows.
+
+Many operators continued using informal/manual coordination methods.
+
+---
+
+## Low Flexibility
+The platform could not handle:
+- Delayed arrivals
+- Emergency unloading
+- Congestion spikes
+- Dynamic dock reassignment
+
+---
+
+# 💡 Our Solution — HarborPulse
+
+HarborPulse introduces a centralized smart coordination platform powered by a real-time **Pulse Score Engine** that dynamically prioritizes vessels instead of relying on static schedules.
+
+The system continuously evaluates:
+- Vessel distance
+- Waiting time
+- Cargo perishability
+- Harbor capacity
+- Real-time operational conditions
+
+This enables:
+✅ Faster unloading  
+✅ Reduced congestion  
+✅ Better dock utilization  
+✅ Improved coordination  
+✅ Lower spoilage risk  
+
+---
+
+# ⚡ Pulse Score Engine
+
+The core innovation of HarborPulse is the dynamic **Pulse Score Algorithm**.
+
+```text
+Pulse Score =
+(Wait Time × 0.5)
++ (Perishability × 10)
+- (Distance × 2)
+```
+
+### Factors Considered
+- ⏳ Waiting Duration
+- 🐟 Cargo Perishability
+- 📍 Vessel Distance
+- 🌦 Environmental Conditions
+- ⚓ Dock Availability
+
+The score updates continuously to optimize dock allocation in real time.
 
 ---
 
 # ✨ Core Features
 
-### 🚤 Tactical Radar & 5KM Priority Zone
-* Real-time GPS/AIS tracking of all vessels within a 15km radius.
-* Visual **5KM "Action Zone"** where priority calculations become critical.
-* Color-coded vessel statuses (High Priority = Pulse Glow).
+## 🚤 Tactical Harbor Radar
+- Real-time vessel tracking
+- 15 KM monitoring radius
+- 5 KM high-priority action zone
+- Live harbor visualization
+- Color-coded vessel priority indicators
 
-### 🏗 Harbor Master Command Center
-* **Live Priority Queue:** Automatically sorted by the Pulse Score.
-* **Manual Override (Bump):** Allows human intervention for emergencies (Medical/Technical) with a full audit log.
-* **Real-Time Telemetry:** Wind speed, tidal offset, and harbor capacity tracking.
+---
 
-### 🚤 Fisherman / Vessel Portal
-* **SMS Pinging:** Low-tech integration allowing small boats to update cargo and distance via simple SMS commands.
-* **Live Manifest:** Transparency for captains to see their rank and estimated dock time.
+## 🏗 Harbor Master Dashboard
+- Live priority queue
+- Dynamic dock allocation
+- Manual emergency override
+- Audit logging system
+- Harbor traffic monitoring
+- Real-time operational telemetry
+
+---
+
+## 📲 Fisherman / Vessel Portal
+- Low-tech SMS support
+- Queue visibility
+- Estimated unloading time
+- Cargo update notifications
+- Lightweight and accessible interface
+
+---
+
+## 🔄 Real-Time Coordination
+- Dynamic slot reassignment
+- Adaptive scheduling
+- Continuous harbor monitoring
+- Live synchronization
+
+---
+
+# ✅ How HarborPulse Solves These Problems
+
+| Existing Problem | HarborPulse Solution |
+|---|---|
+| Static schedules | Dynamic AI-assisted prioritization |
+| Delayed arrivals | Real-time adaptive queue updates |
+| Poor communication | Live dashboard + SMS updates |
+| Manual coordination | Centralized operational control |
+| Low-tech accessibility | SMS-based interaction support |
+| Congestion | Intelligent dock allocation |
 
 ---
 
 # 🏛 System Architecture
+
 ```text
                     ┌─────────────────────┐
                     │   Vessel Operators  │
@@ -80,8 +207,8 @@ HarborPulse introduces a centralized smart coordination platform powered by a dy
               ┌─────────────┘     └─────────────┐
               ▼                                 ▼
    ┌──────────────────┐             ┌──────────────────┐
-   │ Firebase Sync     │             │ Audit Logging    │
-   │ (Real-time DB)    │             │ (Manual Bumps)   │
+   │ Firebase Sync    │             │ Audit Logging    │
+   │ (Real-time DB)   │             │ (Manual Bumps)   │
    └──────────────────┘             └──────────────────┘
 ```
 
@@ -89,39 +216,50 @@ HarborPulse introduces a centralized smart coordination platform powered by a dy
 
 # 🛠 Tech Stack
 
-### Frontend
-* **React.js (Vite)**
-* **Tailwind CSS** (Industrial Slate Design System)
-* **Glassmorphism UI** (Mission-critical HUD aesthetic)
+## Frontend
+- React.js (Vite)
+- Tailwind CSS
+- Responsive Dashboard UI
+- Real-Time Harbor HUD Interface
 
-### Backend
-* **Python (Flask)**
-* **Priority Engine:** Custom weighted algorithm for maritime logistics.
+---
 
-### Database & Infrastructure
-* **Firebase Firestore:** Real-time state synchronization.
-* **SMS Gateway Simulation:** Pattern-matching for legacy device ingestion.
+## Backend
+- Python Flask
+- REST APIs
+- Custom Priority Engine
+
+---
+
+## Database & Services
+- Firebase Firestore
+- Real-time synchronization
+- SMS Gateway Simulation
 
 ---
 
 # 🚀 Installation & Setup
 
-### 1. Clone Repository
+## 1️⃣ Clone Repository
+
 ```bash
-git clone https://github.com/gee-46/NEURAL-CAPITALS-HarborPulse.git
-cd NEURAL-CAPITALS-HarborPulse
+git clone https://github.com/your-username/neural-capitals-harbor-sync.git
+cd neural-capitals-harbor-sync
 ```
 
-### 2. Backend Setup (Python)
-```bash
-# Install dependencies
-pip install flask firebase-admin flask-cors
+---
 
-# Add your serviceAccountKey.json for Firebase in the root
+## 2️⃣ Backend Setup
+
+```bash
+pip install flask firebase-admin flask-cors
 python app.py
 ```
 
-### 3. Frontend Setup (React)
+---
+
+## 3️⃣ Frontend Setup
+
 ```bash
 npm install
 npm run dev
@@ -130,14 +268,57 @@ npm run dev
 ---
 
 # 📈 Impact Potential
-* **30% Reduction** in port idling time for critical vessels.
-* **Zero Spoilage:** Targeted docking for perishable high-value catch.
-* **Operational Clarity:** One single source of truth for the Harbor Master and all Captains.
+
+HarborPulse helps achieve:
+
+- 🚢 Reduced vessel waiting time
+- 🐟 Lower spoilage of perishable goods
+- ⚓ Improved harbor efficiency
+- 📊 Better operational visibility
+- 🌍 Scalable smart harbor infrastructure
 
 ---
 
-# 🏆 Hackathon Submission
-## **TechVerse’26**
+# 🎯 Key Innovation
+
+Unlike traditional harbor systems that rely on static scheduling, HarborPulse dynamically adapts to unpredictable maritime conditions using intelligent prioritization and real-time coordination.
+
+### Major Innovations
+- AI-assisted vessel prioritization
+- Dynamic dock assignment
+- SMS integration for low-tech users
+- Real-time harbor intelligence dashboard
+- Human + AI collaborative coordination
+
+---
+
+# 🔮 Future Scope
+
+- AI-based predictive arrival estimation
+- Weather-aware scheduling
+- Multi-harbor coordination
+- IoT sensor integration
+- Mobile app for fishermen
+- Predictive congestion analytics
+- Automated operational recommendations
+
+---
+
+# 👨‍💻 Team Neural Capitals
+
 Built with innovation, rapid execution, and scalable infrastructure thinking by:
-## **Team Neural Capitals**
-*"Solving real-world infrastructure challenges using intelligent systems."*
+
+- Gautam N Chipkar
+- [Add Team Members]
+
+---
+
+# 📜 License
+
+This project was developed for educational and hackathon purposes under BIT Techverse’26.
+
+---
+
+# 💬 Closing Statement
+
+> “HarborPulse transforms traditional harbor operations into an intelligent, adaptive, and scalable maritime coordination ecosystem.”
